@@ -9,6 +9,7 @@ This changelog is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 
 ### Added
+- Automated notification to the GFI support team when the first external contributor comments on a Good First Issue or Good First Issue Candidate.
 - Added a module-level docstring to the HBAR allowance approval example to clarify
   delegated spending behavior and key concepts. [#1202](https://github.com/hiero-ledger/hiero-sdk-python/issues/1202)
 - Added a GitHub Actions workflow to validate broken Markdown links in pull requests.

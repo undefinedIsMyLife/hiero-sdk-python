@@ -32,29 +32,51 @@ Python SDK team`;
 module.exports = async ({ github, context }) => {
   try {
     const { owner, repo } = context.repo;
-    const { issue, label } = context.payload;
+    const { issue, comment } = context.payload;
 
     if (!issue?.number) return console.log('No issue in payload');
-
-    const labelName = label?.name;
-    if (!labelName) return;
-
-    let message = '';
-    if (labelName === 'Good First Issue') {
-      message = 'There is a new GFI in the Python SDK which is ready to be assigned';
-    } else if (labelName === 'Good First Issue Candidate') {
-      message = 'An issue in the Python SDK requires immediate attention to verify if it is a GFI and label it appropriately';
-    } else {
-      return;
+    
+    if (comment?.user?.type === 'Bot' || comment?.user?.login === 'github-actions') {
+      return console.log('Ignoring bot comment');
     }
 
-    // Check for existing comment
+    if (!comment?.user?.login) {
+      return console.log('No valid comment user found');
+    }
+    const labels = issue.labels?.map(l => l.name) || [];
+
+    const isGFI =
+      labels.includes('Good First Issue') ||
+      labels.includes('Good First Issue Candidate');
+
+    if (!isGFI) {
+      return console.log('Issue is not a GFI');
+    }
+
+    if (issue.assignees && issue.assignees.length > 0) {
+      return console.log('Issue already assigned');
+    }
+    
+    // Fetching all comments before checking human comments
     const comments = await github.paginate(github.rest.issues.listComments, {
       owner, repo, issue_number: issue.number, per_page: 100
     });
+    
+    const humanComments = comments.filter(c => c.user?.type !== 'Bot' && !c.author_association?.includes('MEMBER'));
+
+    if (humanComments.length > 1) {
+      return console.log('Not first human comment, skipping notification');
+    }
+
+    // Check if notification already exists
     if (comments.some(c => c.body?.includes(marker))) {
       return console.log(`Notification already exists for #${issue.number}`);
     }
+
+    const message = labels.includes('Good First Issue')
+      ? `@${comment.user.login} commented on this Good First Issue and may be ready to be assigned. Please review and assign if appropriate.`
+      : `@${comment.user.login} commented on this Good First Issue Candidate. Please review and determine if it should be promoted and assigned.`;
+
 
     // Post notification
     const success = await notifyTeam(github, owner, repo, issue, message, marker);
@@ -63,7 +85,6 @@ module.exports = async ({ github, context }) => {
       console.log('=== Summary ===');
       console.log(`Repository: ${owner}/${repo}`);
       console.log(`Issue Number: ${issue.number}`);
-      console.log(`Label: ${labelName}`);
       console.log(`Message: ${message}`);
     }
 
