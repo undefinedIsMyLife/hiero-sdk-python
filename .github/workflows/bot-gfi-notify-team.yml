@@ -1,9 +1,9 @@
 # This workflow notifies the GFI support team when an issue is labeled as a GFI or GFI Candidate.
 name: GFI Issue Notification
 on:
-  issue_comment:
+  issues:
     types:
-      - created
+      - labeled
 
 permissions:
   issues: write
@@ -12,20 +12,12 @@ permissions:
 jobs:
   gfi_notify_team:
     runs-on: ubuntu-latest
-  if: >
-    github.event_name == 'issue_comment' &&
-    github.event.action == 'created' &&
-    github.event.comment.user.type != 'Bot' &&
-    contains(
-      join(github.event.issue.labels.*.name, ','),
-      'Good First Issue'
-    )
+    if: >
+      (github.event_name == 'issues' && (
+          github.event.label.name == 'Good First Issue' ||
+          github.event.label.name == 'Good First Issue Candidate'
+      ))
 
-
-    concurrency:
-      group: gfi-notify-issue-${{ github.event.issue.number }}
-      cancel-in-progress: false
-      
     steps:
       - name: Harden the runner
         uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
@@ -41,5 +33,5 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd #v8.0.0
         with:
           script: |
-            const script = require('./.github/scripts/bot-gfi-notify-team.js');
+            const script = require('./.github/scripts/gfi_notify_team.js');
             await script({ github, context});
