@@ -33,6 +33,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          DAYS: 0
-          DRY_RUN: false
+          DAYS: 7
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
         run: bash .github/scripts/bot-issue-reminder-no-pr.sh
